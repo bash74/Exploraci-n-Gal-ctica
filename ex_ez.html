@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exploración Galáctica</title>
+</head>
+
+<!--Autores: John Carvajal, Sebastian De Villa-->
+
+<canvas id="canvas" width="600" height="400" tabindex="1"></canvas>
+
+<style>
+#canvas {
+    width: 1600px;
+    height: 800px;
+    border: 7px solid rgb(11, 90, 168);
+  }
+</style>
+
+<script type="text/javascript">
+var canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+
+
+make_base();
+
+function make_base()
+{
+  base_image = new Image();
+  context.globalAlpha = 0.7;
+  base_image.onload = function(){
+    context.drawImage(base_image, 0, 0);
+  }
+}
+
+//----------------------------------------------------------------------------------
+//Boton de refresco
+var refreshButton = document.createElement('button');
+refreshButton.innerHTML = 'Reiniciar';
+refreshButton.style.backgroundColor = 'cyan';
+refreshButton.onclick = function() {
+  location.reload();
+};
+document.body.appendChild(refreshButton);
+refreshButton.style.fontSize = '50px';
+
+//Boton para modo claro y oscuro
+var button = document.createElement('button');
+button.innerHTML = 'Modo Obscuro/Claro';
+button.style.width = '150px';
+button.style.height = '60px';
+button.style.backgroundColor = 'yellow';
+document.body.appendChild(button);
+button.addEventListener('click', function() {
+  if (document.body.style.backgroundColor == 'black') {
+    document.body.style.backgroundColor = 'white';
+    document.body.style.color = 'black';
+  } else {
+    document.body.style.backgroundColor = 'black';
+    document.body.style.color = 'white';
+  }
+});
+
+/* COMANDO PARA REFRESCAR LA PÁGINA CON 'R'*/
+document.addEventListener('keydown', function(event) {
+  if (event.keyCode == 82) {
+    location.reload();
+  }
+});
+
+/* Caja de Lore'' */
+var helloBox = document.createElement('div');
+helloBox.innerHTML = 'En una aventura por recuperar un artefacto espacial que podría salvar la tierra, encarnas el papel del comandante S.J Redford en una peligrosa aventura por el espacio, al ser interceptado por humanoides espaciales tu objetivo es esquivar sus proyectiles rojos para sobrevivir y llegar a la tierra.';
+helloBox.style.border = '10px solid black';
+helloBox.style.padding = '40px';
+helloBox.style.fontSize = '40px'
+document.body.appendChild(helloBox);
+
+// Funcion para crear los cuadrados
+function crearcuadrado(x, y, longitud, velocidad) {
+  return {
+    x: x,
+    y: y,
+    l: longitud,
+    s: velocidad,
+    dibujar: function() {
+      context.fillRect(this.x, this.y, this.l, this.l);
+    }
+  };
+}
+
+// La nave que controla el usuario
+var nave = crearcuadrado(50, canvas.height / 2 - 25, 20, 8);
+var up = false;
+var down = false;
+
+// Variables para enemigos
+var enemigos = [];
+var velocidadenemigo = 3;
+
+function makeEnemy() {
+  var enemigoX = canvas.width;
+  var tamanoenemy = Math.round((Math.random() * 15)) + 15;
+  var enemigoY = Math.round(Math.random() * (canvas.height - tamanoenemy * 2)) + tamanoenemy;
+  var VelocEnemigo = Math.round(Math.random() * velocidadenemigo) + velocidadenemigo;
+  enemigos.push(crearcuadrado(enemigoX, enemigoY, tamanoenemy, VelocEnemigo));
+}
+
+// Revisar que a este en rango b a c 
+function isWithin(a, b, c) {
+  return (a > b && a < c);
+}
+
+// Devolver true si dos cuadrados a y b colisionan, sino es false
+function colisionando(a, b) {
+  var result = false;
+  if (isWithin(a.x, b.x, b.x + b.l) || isWithin(a.x + a.l, b.x, b.x + b.l)) {
+    if (isWithin(a.y, b.y, b.y + b.l) || isWithin(a.y + a.l, b.y, b.y + b.l)) {
+      result = true;
+    }
+  }
+  return result;
+}
+
+// Retraso de la aparicion de enemigos
+var tiempoentreenemigos = 1 * 200;
+var timeoutId = null;
+
+// Menu principal
+function menu() {
+  erase();
+  context.fillStyle = '#ffffff';
+  context.font = '36px monospace';
+  context.textAlign = 'center';
+  context.fillText('Exploración Galáctica', canvas.width / 2, canvas.height / 4);
+  context.font = '24px monospace';
+  context.fillText('Click para empezar', canvas.width / 2, canvas.height / 2);
+  context.font = '18px monospace';
+  context.fillText('Esquiva los obstaculos - Arriba/Abajo para moverse.', canvas.width / 2, (canvas.height / 4) * 3);
+  // Empieza juego
+  canvas.addEventListener('click', startGame);
+}
+
+document.body.onkeyup = function(e){
+    if(e.keyCode == 32){
+        document.body.style.backgroundColor = '#'+Math.floor(Math.random()*16777215).toString(16);
+    }
+}
+
+// Comenzar el juego
+function startGame() {
+  // Intervalo para que los enemigos aparezcan
+  timeoutId = setInterval(makeEnemy, tiempoentreenemigos);
+  // Tiempo que se demora en aparecer el primer enemigo
+  setTimeout(makeEnemy, 1000);
+  // draw loop
+  dibujar();
+  // Evento Click
+  canvas.removeEventListener('click', startGame);
+}
+
+/* CRONOMETRO QUE COMIENZA CON SHIFT*/
+var stopwatch = document.createElement('div');
+stopwatch.innerHTML = '0';
+stopwatch.style.fontSize = '100px';
+stopwatch.style.fontFamily = 'monospace';
+stopwatch.style.color = '#fff';
+stopwatch.style.backgroundColor = '#000';
+stopwatch.style.padding = '4px';
+stopwatch.style.margin = '5px';
+stopwatch.innerHTML = '0.0';
+stopwatch.style.position = 'absolute';
+stopwatch.style.top = '0px';
+stopwatch.style.right = '0px';
+document.body.appendChild(stopwatch);
+var startTime = 0;
+var stopTime = 0;
+var running = false;
+var interval = null;
+document.addEventListener('keydown', function(event) {
+  if (event.keyCode == 37) {
+    if (running) {
+      stopTime = new Date().getTime();
+      running = false;
+      clearInterval(interval);
+      stopwatch.innerHTML = (stopTime - startTime) / 1000;
+    } else {
+      startTime = new Date().getTime();
+      running = true;
+      interval = setInterval(function() {
+        stopwatch.innerHTML = (new Date().getTime() - startTime) / 1000;
+      }, 100);
+    }
+  }
+});
+
+// Funcion para mostrar pantalla de final de juego
+function endGame() {
+  clearInterval(timeoutId);
+
+  // Pantalla Final y contenido
+  erase();
+  context.fillStyle = '#ffffff';
+  context.font = '24px monospace';
+  context.textAlign = 'center';
+  context.fillText('FIN DEL JUEGO |Te has estrellado|', canvas.width / 2, canvas.height / 2);
+}
+
+// Eventos con el teclado
+canvas.addEventListener('keydown', function(event) {
+  event.preventDefault();
+  if (event.keyCode === 38) { // UP
+    up = true;
+  }
+  if (event.keyCode === 40) { // DOWN
+    down = true;
+  }
+});
+
+//Keyup eventos
+canvas.addEventListener('keyup', function(event) {
+  event.preventDefault();
+  if (event.keyCode === 38) { // UP 
+    up = false;
+  }
+  if (event.keyCode === 40) { // DOWN
+    down = false;
+  }
+});
+
+// Limpiar el canvas
+function erase() {
+  context.fillStyle = '#000000';
+  base_image.src = 'https://blogger.googleusercontent.com/img/a/AVvXsEjJWopQ0VrJ-iyhTdIMfZf6D-ac6pP4iWaw_45SVyfhq7XNQ7kQOLzmDEk1KuZPX7xwrAZ-rSyQJFgpUZuo8cZy4GardfqffR4Rh5YzvAGDdosY08MJTsK-FAg3xkd7V96b8TzxdYyxg1ZP_s2qVuMsk81ktjwyCJqeq88iAIfM7tQMDgf0RvA7Inj7aA';
+   context.drawImage(base_image, 0, 0);
+   context.fillRect(0, 0, 600, 400);
+}
+
+//Boton de medio
+var button = document.createElement('button');
+button.innerHTML = 'Modo normal';
+button.onclick = function() {
+  window.location.href = 'exploracion_galactica.html';
+};
+document.body.appendChild(button);
+
+//Boton de dificil
+var button = document.createElement('button');
+button.innerHTML = 'Modo Difícil';
+button.onclick = function() {
+  window.location.href = 'ex_hard.html';
+};
+document.body.appendChild(button);
+
+
+// Loop que dibuja 
+function dibujar() {
+  erase();
+  var gameOver = false;
+
+  // Mover y dibujar los enemigos
+  enemigos.forEach(function(enemigo) {
+    enemigo.x -= enemigo.s;
+    if (enemigo.x < 0) {
+      gameOver = false;
+    }
+    context.fillStyle = '#82d40f';
+    enemigo.dibujar();
+  });
+  //Colision entre nave y enemigos
+  enemigos.forEach(function(enemigo, i) {
+    if (colisionando(enemigo, nave)) {
+      gameOver = true;
+    }
+  });
+  // Mover la nave 
+  if (down) {
+    nave.y += nave.s;
+  }
+  if (up) {
+    nave.y -= nave.s;
+  }
+  // Evita que la nave se salga de los bordes
+  if (nave.y < 0) {
+    nave.y = 0;
+  }
+  if (nave.y > canvas.height - nave.l) {
+    nave.y = canvas.height - nave.l;
+  }
+  // Dibuja la nave
+  context.fillStyle = '#0FF0E5';
+  nave.dibujar();
+
+  // Termina o continua el juego
+  if (gameOver) {
+    endGame();
+  } else {
+    window.requestAnimationFrame(dibujar);
+  }
+}
+
+menu();
+canvas.focus();
+
+</script>
+<body style="background-color:#1e6160">
+
+  <iframe width="100%" height="60" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/344325396&color=%231e2424&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe><div style="font-size: 10px; color: #cccccc;line-break: anywhere;word-break: normal;overflow: hidden;white-space: nowrap;text-overflow: ellipsis; font-family: Interstate,Lucida Grande,Lucida Sans Unicode,Lucida Sans,Garuda,Verdana,Tahoma,sans-serif;font-weight: 100;"><a href="https://soundcloud.com/viewtale" title="mikey geometry dash" target="_blank" style="color: #cccccc; text-decoration: none;">mikey geometry dash</a> · <a href="https://soundcloud.com/viewtale/revenge-the-unseen-ending-battle-against-a-final-foe-extended" title="REVENGE THE UNSEEN ENDING - Battle Against A Final Foe (EXTENDED)" target="_blank" style="color: #cccccc; text-decoration: none;">REVENGE THE UNSEEN ENDING - Battle Against A Final Foe (EXTENDED)</a></div>
+</body>
+</html>
